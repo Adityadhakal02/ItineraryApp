@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground: #0f172a;
+  --background: #f8fafc;
+  --accent: #0ea5e9;
+  --card: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground: #f1f5f9;
+    --background: #0f172a;
+    --accent: #38bdf8;
+    --card: #1e293b;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.mapboxgl-map {
+  border-radius: 0.75rem;
+}
