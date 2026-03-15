@@ -1,11 +1,12 @@
 """Ticketmaster Discovery API client for events."""
+from typing import Optional
 import httpx
 from app.config import get_settings
 
 BASE = "https://app.ticketmaster.com/discovery/v2"
 
 
-async def search_events(city: str, start_date: str | None, end_date: str | None, keyword: str | None = None) -> list[dict]:
+async def search_events(city: str, start_date: Optional[str], end_date: Optional[str], keyword: Optional[str] = None) -> list[dict]:
     settings = get_settings()
     if not settings.ticketmaster_api_key:
         return _mock_events(city, start_date, end_date)
@@ -38,17 +39,17 @@ async def search_events(city: str, start_date: str | None, end_date: str | None,
     ]
 
 
-def _lat(e: dict) -> float | None:
+def _lat(e: dict) -> Optional[float]:
     v = e.get("_embedded", {}).get("venues", [{}])
     return float(v[0].get("location", {}).get("latitude")) if v and v[0].get("location") else None
 
 
-def _lon(e: dict) -> float | None:
+def _lon(e: dict) -> Optional[float]:
     v = e.get("_embedded", {}).get("venues", [{}])
     return float(v[0].get("location", {}).get("longitude")) if v and v[0].get("location") else None
 
 
-def _mock_events(city: str, start_date: str | None, end_date: str | None) -> list[dict]:
+def _mock_events(city: str, start_date: Optional[str], end_date: Optional[str]) -> list[dict]:
     return [
         {"id": "1", "name": "Sample Concert", "url": "https://example.com", "date": start_date or "2026-03-01", "time": "20:00", "venue": "Main Hall", "lat": 48.8566, "lon": 2.3522, "price_min": 50, "price_max": 120},
         {"id": "2", "name": "Art Exhibition", "url": "https://example.com", "date": end_date or start_date or "2026-03-02", "time": "10:00", "venue": "City Museum", "lat": 48.8606, "lon": 2.3376, "price_min": 15, "price_max": 25},

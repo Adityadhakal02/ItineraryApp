@@ -1,9 +1,10 @@
 """Mapbox Directions API for routes between waypoints."""
+from typing import Optional
 import httpx
 from app.config import get_settings
 
 
-async def get_route(coordinates: list[tuple[float, float]]) -> dict | None:
+async def get_route(coordinates: list[tuple[float, float]]) -> Optional[dict]:
     """Get route geometry and duration/distance. coordinates = [(lon, lat), ...]."""
     if len(coordinates) < 2:
         return None

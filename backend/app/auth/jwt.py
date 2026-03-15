@@ -1,4 +1,5 @@
 """JWT creation and validation."""
+from typing import Optional
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from app.config import get_settings
@@ -13,7 +14,7 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
-def decode_access_token(token: str) -> dict | None:
+def decode_access_token(token: str) -> Optional[dict]:
     try:
         return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
     except JWTError:

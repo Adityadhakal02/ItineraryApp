@@ -1,7 +1,7 @@
 """Pydantic schemas for itineraries."""
+from typing import Any, Optional
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Any
 
 
 class ItineraryCreate(BaseModel):
@@ -9,21 +9,21 @@ class ItineraryCreate(BaseModel):
 
 
 class ItineraryUpdate(BaseModel):
-    title: str | None = None
-    payload: dict | None = None
+    title: Optional[str] = None
+    payload: Optional[dict] = None
 
 
 class ItineraryOut(BaseModel):
     id: int
     user_id: int
-    title: str | None
-    raw_query: str | None
-    destination: str | None
-    start_date: str | None
-    end_date: str | None
-    budget_total: float | None
-    estimated_cost: float | None
-    payload: dict | None
+    title: Optional[str]
+    raw_query: Optional[str]
+    destination: Optional[str]
+    start_date: Optional[str]
+    end_date: Optional[str]
+    budget_total: Optional[float]
+    estimated_cost: Optional[float]
+    payload: Optional[dict]
     created_at: datetime
     updated_at: datetime
 
@@ -33,12 +33,12 @@ class ItineraryOut(BaseModel):
 
 class ItineraryList(BaseModel):
     id: int
-    title: str | None
-    destination: str | None
-    start_date: str | None
-    end_date: str | None
-    budget_total: float | None
-    estimated_cost: float | None
+    title: Optional[str]
+    destination: Optional[str]
+    start_date: Optional[str]
+    end_date: Optional[str]
+    budget_total: Optional[float]
+    estimated_cost: Optional[float]
     created_at: datetime
 
     class Config:
