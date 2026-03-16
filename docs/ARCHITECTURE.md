@@ -33,6 +33,8 @@ Travel Itinerary AI Orchestrator is a three-tier web application: frontend (Next
 - **`app/models/`** — SQLAlchemy models (User, Itinerary).
 - **`app/auth/`** — JWT creation/validation, `get_current_user` dependency.
 - **`app/routers/auth.py`** — Register, login, me.
+- **`app/routers/itineraries.py`** — Create (stub), list, get. Create uses `stub_itinerary` for now.
+- **`app/services/stub_itinerary.py`** — Builds a minimal itinerary from the raw query (no LLM); uses Ticketmaster mock + static dining/hotels so the payload shape is ready for the frontend.
 - **`app/clients/`** — API wrappers: Ticketmaster, Yelp, Amadeus, Mapbox (with mock fallbacks).
 
 ## Database schema

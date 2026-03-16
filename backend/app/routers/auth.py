@@ -1,4 +1,4 @@
-"""Authentication: register, login, logout (client drops token)."""
+# register, login, /me. bcrypt for passwords, JWT for session (logout = client drops token)
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select

@@ -1,4 +1,4 @@
-"""Application configuration from environment."""
+# config from .env - no secrets in code
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 

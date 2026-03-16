@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { auth as authApi } from "@/lib/api";
+import { getMe, login as loginApi, register as registerApi } from "@/lib/api";
 
 type User = { id: number; email: string; full_name: string | null } | null;
 
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       if (typeof window !== "undefined") localStorage.setItem("token", t);
       setToken(t);
-      const me = await authApi.me();
+      const me = await getMe();
       setUser(me);
     } catch {
       if (typeof window !== "undefined") localStorage.removeItem("token");
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      const { access_token } = await authApi.login(email, password);
+      const { access_token } = await loginApi(email, password);
       await loadUser(access_token);
     },
     [loadUser]
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(
     async (email: string, password: string, fullName?: string) => {
-      const { access_token } = await authApi.register(email, password, fullName);
+      const { access_token } = await registerApi(email, password, fullName);
       await loadUser(access_token);
     },
     [loadUser]

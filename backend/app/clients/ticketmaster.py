@@ -1,4 +1,4 @@
-"""Ticketmaster Discovery API client for events."""
+# Ticketmaster events - mocks when no API key
 from typing import Optional
 import httpx
 from app.config import get_settings

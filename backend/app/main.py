@@ -1,15 +1,15 @@
-"""FastAPI application entry point."""
+# main app - auth + itineraries for now. orchestration routes later
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import auth
+from app.routers import auth, itineraries
 
 settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
-    description="Multi-agent AI system for generating optimized travel itineraries (Weeks 1–4: setup, auth, API clients).",
+    description="Travel itinerary API. Auth and stub create/list work; still need to add real NL parsing and agent orchestration.",
     version="0.1.0",
 )
 
@@ -22,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(itineraries.router, prefix="/api/itineraries", tags=["itineraries"])
 
 
 @app.get("/")

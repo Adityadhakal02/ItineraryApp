@@ -1,8 +1,10 @@
 # Travel Itinerary AI Orchestrator
 
+**Aditya Raj Dhakal — CSCI 411/412 Senior Seminar**
+
 ## Project description
 
-Web app that generates travel itineraries from natural language using multi-agent orchestration and external APIs (events, dining, hotels, transport). Current scope: setup, database schema, JWT auth, and API client structure.
+This is my senior seminar project. The goal is a web app where you type something like "Paris art weekend" and get an itinerary with events, places to eat, and hotels. Right now it has user auth, a stub that creates itineraries from your query (no real AI parsing yet), and the API client code for Ticketmaster, Yelp, Amadeus, and Mapbox. I'm still working on wiring in Gemini for natural language and the full orchestration layer.
 
 ## Setup instructions
 
@@ -36,3 +38,7 @@ npm install
 npm run dev
 ```
 App: http://localhost:3000
+
+## Acknowledgments
+
+Use of AI tools and open-source libraries is documented in [docs/ACKNOWLEDGMENTS.md](docs/ACKNOWLEDGMENTS.md).
