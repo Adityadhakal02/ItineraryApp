@@ -1,7 +1,10 @@
 """Yelp Fusion API client for restaurants and optional lodging."""
+import logging
+
 import httpx
 from app.config import get_settings
 
+logger = logging.getLogger(__name__)
 BASE = "https://api.yelp.com/v3"
 
 
@@ -11,10 +14,14 @@ async def search_restaurants(lat: float, lon: float, limit: int = 5, term: str =
         return _mock_restaurants(lat, lon)
     headers = {"Authorization": f"Bearer {settings.yelp_api_key}"}
     params = {"latitude": lat, "longitude": lon, "limit": limit, "term": term}
-    async with httpx.AsyncClient() as client:
-        r = await client.get(f"{BASE}/businesses/search", headers=headers, params=params)
-        r.raise_for_status()
-        data = r.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(f"{BASE}/businesses/search", headers=headers, params=params, timeout=30.0)
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        logger.warning("Yelp API failed (%s); using mock restaurants.", e)
+        return _mock_restaurants(lat, lon)
     return [
         {
             "id": b.get("id"),

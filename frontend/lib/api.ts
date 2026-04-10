@@ -1,8 +1,49 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+/**
+ * API base URL.
+ * - Default (unset NEXT_PUBLIC_API_URL): same-origin `/api` so Next.js can proxy to FastAPI in dev (see next.config.ts).
+ * - Production: set NEXT_PUBLIC_API_URL to your backend origin, e.g. https://api.example.com
+ */
+function getApiBase(): string {
+  const u = process.env.NEXT_PUBLIC_API_URL;
+  if (u != null && u.trim() !== "") {
+    return u.replace(/\/$/, "");
+  }
+  return "";
+}
+
+const API_BASE = getApiBase();
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("token");
+}
+
+const NETWORK_HINT =
+  "Cannot reach the API. Start the backend: cd backend && source .venv/bin/activate && uvicorn app.main:app --reload (must listen on port 8000).";
+
+function parseFastApiDetail(detail: unknown): string {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((x) =>
+        typeof x === "object" && x !== null && "msg" in x ? String((x as { msg: string }).msg) : JSON.stringify(x)
+      )
+      .join("; ");
+  }
+  return "";
+}
+
+async function readApiErrorBody(res: Response): Promise<string> {
+  const text = await res.text();
+  try {
+    const j = JSON.parse(text) as { detail?: unknown; message?: string };
+    const d = parseFastApiDetail(j.detail);
+    if (d) return d;
+    if (j.message) return String(j.message);
+  } catch {
+    /* not JSON */
+  }
+  return text.trim().slice(0, 240) || res.statusText;
 }
 
 async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<Response> {
@@ -12,7 +53,18 @@ async function fetchWithAuth(path: string, options: RequestInit = {}): Promise<R
     ...(options.headers as Record<string, string>),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  return fetch(`${API_BASE}${path}`, { ...options, headers });
+  const url = `${API_BASE}${path}`;
+  try {
+    return await fetch(url, { ...options, headers });
+  } catch {
+    throw new Error(NETWORK_HINT);
+  }
+}
+
+async function throwIfNotOk(res: Response, context: string): Promise<void> {
+  if (res.ok) return;
+  const body = await readApiErrorBody(res);
+  throw new Error(`${context} (${res.status}): ${body}`);
 }
 
 // auth
@@ -21,10 +73,7 @@ export async function register(email: string, password: string, fullName?: strin
     method: "POST",
     body: JSON.stringify({ email, password, full_name: fullName }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
-  }
+  await throwIfNotOk(res, "Register failed");
   return res.json();
 }
 
@@ -33,19 +82,13 @@ export async function login(email: string, password: string) {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
-  }
+  await throwIfNotOk(res, "Login failed");
   return res.json();
 }
 
 export async function getMe() {
   const res = await fetchWithAuth("/api/auth/me");
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
-  }
+  await throwIfNotOk(res, "Session check failed");
   return res.json();
 }
 
@@ -68,31 +111,26 @@ export type ItineraryDetail = ItineraryListItem & {
 };
 
 export async function listItineraries(): Promise<ItineraryListItem[]> {
-  const res = await fetchWithAuth("/api/itineraries/");
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
+  const res = await fetchWithAuth("/api/itineraries");
+  await throwIfNotOk(res, "Could not load itineraries");
+  try {
+    return await res.json();
+  } catch {
+    throw new Error("Could not load itineraries: server returned invalid JSON.");
   }
-  return res.json();
 }
 
 export async function getItinerary(id: number): Promise<ItineraryDetail> {
   const res = await fetchWithAuth(`/api/itineraries/${id}`);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
-  }
+  await throwIfNotOk(res, "Could not load itinerary");
   return res.json();
 }
 
 export async function createItinerary(query: string): Promise<ItineraryDetail> {
-  const res = await fetchWithAuth("/api/itineraries/", {
+  const res = await fetchWithAuth("/api/itineraries", {
     method: "POST",
     body: JSON.stringify({ query }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || res.statusText);
-  }
+  await throwIfNotOk(res, "Could not create itinerary");
   return res.json();
 }

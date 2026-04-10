@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -7,65 +7,26 @@ from app.database import get_db
 from app.models import User, Itinerary
 from app.schemas.itinerary import ItineraryCreate, ItineraryOut, ItineraryList
 from app.auth.deps import get_current_user
-from app.clients import ticketmaster
+from app.services.orchestrator import build_itinerary_from_query
 
 router = APIRouter()
 
 
-@router.post("/", response_model=ItineraryOut)
+@router.post("", response_model=ItineraryOut)
 async def create_itinerary(
     data: ItineraryCreate,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # stub: no LLM yet, just use first word as destination and try to get a number for budget
-    query = (data.query or "").strip()
-    parts = query.split()
-    destination = parts[0].title() if parts else "Trip"
-    start_date = "2026-04-01"
-    end_date = "2026-04-03"
-    budget_total = None
-    for word in parts:
-        s = "".join(c for c in word if c.isdigit())
-        if s:
-            budget_total = float(s)
-            break
+    built = await build_itinerary_from_query((data.query or "").strip())
+    title = built["title"]
+    destination = built["destination"]
+    start_date = built["start_date"]
+    end_date = built["end_date"]
+    budget_total = built["budget_total"]
+    estimated_cost = built["estimated_cost"]
+    payload = built["payload"]
 
-    events = await ticketmaster.search_events(destination, start_date, end_date, keyword=None)
-    if not events:
-        events = [{"name": "Explore " + destination, "venue": destination, "date": start_date, "time": "10:00", "lat": 48.8566, "lon": 2.3522, "price_min": 0, "price_max": 0}]
-
-    restaurants = [
-        {"name": "Local Bistro", "rating": 4.2, "price": "$$", "address": "123 Main St", "lat": 48.8566, "lon": 2.3522},
-        {"name": "Cafe Central", "rating": 4.0, "price": "$", "address": "45 Center Ave", "lat": 48.8584, "lon": 2.2945},
-    ]
-    hotels = [
-        {"name": "Central Hotel", "lat": 48.8566, "lon": 2.3522},
-        {"name": "Downtown Stay", "lat": 48.8584, "lon": 2.2945},
-    ]
-
-    total = 0
-    for e in events:
-        total += (e.get("price_min") or 0) + (e.get("price_max") or 0)
-    event_avg = total / len(events) if events else 0
-    estimated_cost = round(event_avg + 80 + 120, 2)
-
-    payload: dict[str, Any] = {
-        "destination": destination,
-        "start_date": start_date,
-        "end_date": end_date,
-        "budget": budget_total,
-        "estimated_cost": estimated_cost,
-        "events": events,
-        "restaurants": restaurants,
-        "hotels": hotels,
-        "days": [
-            {"day": 1, "date": start_date, "events": events[:1], "dining": restaurants[:1], "notes": ""},
-            {"day": 2, "date": end_date, "events": events[1:] if len(events) > 1 else events[:1], "dining": restaurants[1:], "notes": ""},
-        ],
-    }
-
-    title = destination + " trip"
     itinerary = Itinerary(
         user_id=user.id,
         title=title,
@@ -83,7 +44,7 @@ async def create_itinerary(
     return itinerary
 
 
-@router.get("/", response_model=List[ItineraryList])
+@router.get("", response_model=List[ItineraryList])
 async def list_itineraries(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -103,7 +64,7 @@ async def get_itinerary(
     result = await db.execute(
         select(Itinerary).where(Itinerary.id == itinerary_id, Itinerary.user_id == user.id)
     )
-    itinerary = result.scalar_one_or_none()
+    itinerary = result.scalars().first()
     if not itinerary:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Itinerary not found")
     return itinerary

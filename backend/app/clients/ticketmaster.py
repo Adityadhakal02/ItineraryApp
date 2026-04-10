@@ -1,8 +1,11 @@
-# Ticketmaster events - mocks when no API key
+# Ticketmaster events - mocks when no API key or request fails
+import logging
 from typing import Optional
+
 import httpx
 from app.config import get_settings
 
+logger = logging.getLogger(__name__)
 BASE = "https://app.ticketmaster.com/discovery/v2"
 
 
@@ -17,10 +20,14 @@ async def search_events(city: str, start_date: Optional[str], end_date: Optional
         params["startDateTime"] = f"{start_date}T00:00:00Z"
     if end_date:
         params["endDateTime"] = f"{end_date}T23:59:59Z"
-    async with httpx.AsyncClient() as client:
-        r = await client.get(f"{BASE}/events.json", params=params)
-        r.raise_for_status()
-        data = r.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(f"{BASE}/events.json", params=params, timeout=30.0)
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        logger.warning("Ticketmaster API failed (%s); using mock events.", e)
+        return _mock_events(city, start_date, end_date)
     events = data.get("_embedded", {}).get("events", [])
     return [
         {

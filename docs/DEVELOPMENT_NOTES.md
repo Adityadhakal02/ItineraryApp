@@ -1,27 +1,28 @@
 # Development Notes
 
-Notes I keep for myself and for progress reports.
+Notes for progress reports and future work.
 
-## Infrastructure and auth (Weeks 1–4)
+## Infrastructure and auth (early phase)
 
-- Chose FastAPI for the backend for async support and automatic OpenAPI docs; Next.js 15 for the frontend to match the proposal stack.
-- Kept auth in a single router (`/api/auth`) so the repo clearly reflects “foundation only” before adding itinerary endpoints.
-- Used SQLAlchemy async with PostgreSQL; added a simple `create_tables.py` script instead of full Alembic migrations for the first phase so I could iterate on the schema quickly.
-- API clients return mocks when keys are missing so I could run everything locally without signing up for every API right away.
+- FastAPI backend (async), Next.js 15 frontend, PostgreSQL via async SQLAlchemy.
+- `create_tables.py` for schema; Alembic listed in requirements if we migrate later.
+- JWT auth in `/api/auth`; itineraries require a logged-in user.
 
-## Compatibility and tooling
+## Post–midterm implementation (current)
 
-- Backend kept compatible with Python 3.9 (e.g. `Optional[...]` instead of `X | None`) for consistency with the environment I use.
-- Had to add greenlet to requirements after the first run failed (async SQLAlchemy needs it).
+- **`parse_trip.py`** — Gemini (`gemini-1.5-flash`) returns JSON fields for destination, IATA, dates, budget, interests; **fallback** when `GOOGLE_GEMINI_API_KEY` is unset or on error.
+- **`geocode.py`** — Mapbox Geocoding preferred; **Nominatim** fallback; default coords if both fail.
+- **`orchestrator.py`** — `asyncio.gather` for Ticketmaster, Yelp, Amadeus; builds **days**, **markers**, **Mapbox Directions** route; stores everything in `payload`.
+- **`itineraries.py`** — Create route calls orchestrator only (no inline stub).
+- **Frontend `TripMap`** — `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` for interactive map; otherwise a notice (data still in payload).
 
-## Stub itinerary flow (current)
+## Optional / next steps
 
-- Added itineraries API (create, list, get). Create uses a stub that takes the first word as destination and uses the Ticketmaster mock for events; dining/hotels are hardcoded so the JSON shape matches the frontend. Lets me demo the full flow before adding Gemini.
-- Dashboard has the input + list; detail page shows day-by-day and the events/dining/hotels. Map not done yet.
+- Automated tests (mock httpx / Gemini).
+- Rate limiting or caching (Redis URL in config is unused).
+- Richer day scheduling (true calendar logic vs. round-robin).
+- Deployment (Docker, hosting DB, restricted Mapbox URLs).
 
-## Next phase (post–midterm)
+## Compatibility
 
-- NL parsing (Gemini) to turn natural language into structured params.
-- Orchestrator (single flow or LangGraph) to call the four clients and merge results.
-- Replace stub with real orchestration; keep the same API and frontend.
-- Mapbox map and route display; then testing and deployment.
+- Prefer `Optional[...]` in older Python if needed; project targets 3.10+.

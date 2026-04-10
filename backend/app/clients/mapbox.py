@@ -1,7 +1,11 @@
 """Mapbox Directions API for routes between waypoints."""
+import logging
 from typing import Optional
+
 import httpx
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 async def get_route(coordinates: list[tuple[float, float]]) -> Optional[dict]:
@@ -13,10 +17,18 @@ async def get_route(coordinates: list[tuple[float, float]]) -> Optional[dict]:
         return _mock_route(coordinates)
     coords_str = ";".join(f"{lon},{lat}" for lon, lat in coordinates)
     url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{coords_str}"
-    async with httpx.AsyncClient() as client:
-        r = await client.get(url, params={"access_token": settings.mapbox_access_token, "geometries": "geojson"})
-        r.raise_for_status()
-        data = r.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                url,
+                params={"access_token": settings.mapbox_access_token, "geometries": "geojson"},
+                timeout=30.0,
+            )
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        logger.warning("Mapbox Directions failed (%s); using straight-line mock route.", e)
+        return _mock_route(coordinates)
     routes = data.get("routes", [])
     if not routes:
         return None

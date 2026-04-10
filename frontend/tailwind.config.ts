@@ -9,8 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "monospace"],
+        sans: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
+      },
+      colors: {
+        brand: {
+          yellow: "#eab308",
+          "yellow-light": "#fef9c3",
+          "yellow-soft": "#fffbeb",
+        },
       },
     },
   },

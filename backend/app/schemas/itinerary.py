@@ -1,7 +1,8 @@
 """Pydantic schemas for itineraries."""
 from typing import Any, Optional
-from pydantic import BaseModel
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
 
 
 class ItineraryCreate(BaseModel):
@@ -14,6 +15,8 @@ class ItineraryUpdate(BaseModel):
 
 
 class ItineraryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: int
     title: Optional[str]
@@ -27,11 +30,10 @@ class ItineraryOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 class ItineraryList(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: Optional[str]
     destination: Optional[str]
@@ -40,6 +42,3 @@ class ItineraryList(BaseModel):
     budget_total: Optional[float]
     estimated_cost: Optional[float]
     created_at: datetime
-
-    class Config:
-        from_attributes = True
