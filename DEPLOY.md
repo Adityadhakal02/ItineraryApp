@@ -46,7 +46,7 @@ You do **not** need to edit this URL for this app: the backend automatically swi
 1. In the **same Railway project**, click **+ New** → **GitHub Repo** → choose the repo you pushed in step 0.
 2. After the service is created, click it → **Settings**:
    - **Root Directory**: set to `backend` (exactly this folder name in your repo).
-   - **Builder**: should detect **Dockerfile**; if there is a choice, pick Docker.
+   - **Builder**: must use **Dockerfile** (this repo ships `backend/railway.json` with `"builder": "DOCKERFILE"` so Railway does not default to **Railpack**, which can ignore your Docker image and never run Uvicorn the way we expect).
 3. **Variables** tab on **this API service** (not Postgres). Click **+ New Variable** and add each row:
 
 | Name | What to put |
@@ -83,9 +83,9 @@ That page means the **edge URL is not reaching your running container** (wrong p
    Open the **ItineraryApp** service (not only the project overview) → **Settings** → **Networking** → **Generate domain** (or copy the hostname shown there). Prefer that URL over a generic `*-production.up.railway.app` name unless you know it is wired to this service.
 
 2. **Match the HTTP port to Uvicorn**  
-   - Add variable **`PORT`** = **`8000`** on **ItineraryApp** → **Variables** → save → **Redeploy**.  
-   - In **Networking**, the public HTTP port should be **`8000`** (same number).  
-   If you instead see Railway inject **`PORT=8080`** (expand “variables added by Railway”), then either point public networking at **8080**, or force **`PORT=8000`** as a **user** variable and redeploy so everything uses **8000**.
+   - Expand **“variables added by Railway”** on **ItineraryApp**. If you see **`PORT=8080`**, your public domain must target port **`8080`** (not `8000`). Remove any **user** `PORT` you added if it fights this.  
+   - If there is **no** injected `PORT`, add **`PORT`** = **`8000`** as a **user** variable and set public networking to **`8000`**.  
+   Rule: the number in **Networking** must match the port in the deploy log line **“Uvicorn running on http://0.0.0.0:PORT”**.
 
 3. **Confirm the process is up**  
    **Deployments** → latest → scroll logs to **“Application startup complete”** / **Uvicorn running on** `0.0.0.0:…`. The port in that line must match your public networking port.
