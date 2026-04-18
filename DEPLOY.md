@@ -56,6 +56,7 @@ You do **not** need to edit this URL for this app: the backend automatically swi
 | `GOOGLE_GEMINI_API_KEY` | Your Gemini key. |
 | `DEMO_MODE` | `false` (unless you want demo data). |
 | `CORS_ORIGINS` | Leave **empty** for your first deploy if you will use a **\*.vercel.app** URL. The API already allows `https://*.vercel.app` in code. If you use a **custom domain** (e.g. `https://trips.example.com`), set this to that full URL (no trailing slash). |
+| `PORT` | Set to **`8000`** (recommended). Your Docker image runs Uvicorn with `--port ${PORT:-8000}`. Railway’s public URL must target the **same** port the process listens on. |
 
 Optional keys (only if you use them):
 
@@ -73,6 +74,23 @@ Optional keys (only if you use them):
 6. **Sanity check**: open `https://YOUR-API-HOST/health` in a browser. You should see JSON like `{"status":"ok"}`.
 
 If deploy fails, open **Deployments** → latest → **Logs**. Common issues: wrong **Root Directory** (`backend`), or **`DATABASE_URL`** missing.
+
+### Railway — “The train has not arrived at the station” / Not Found
+
+That page means the **edge URL is not reaching your running container** (wrong port, domain not on this service, or service still down).
+
+1. **Domain must belong to the API service**  
+   Open the **ItineraryApp** service (not only the project overview) → **Settings** → **Networking** → **Generate domain** (or copy the hostname shown there). Prefer that URL over a generic `*-production.up.railway.app` name unless you know it is wired to this service.
+
+2. **Match the HTTP port to Uvicorn**  
+   - Add variable **`PORT`** = **`8000`** on **ItineraryApp** → **Variables** → save → **Redeploy**.  
+   - In **Networking**, the public HTTP port should be **`8000`** (same number).  
+   If you instead see Railway inject **`PORT=8080`** (expand “variables added by Railway”), then either point public networking at **8080**, or force **`PORT=8000`** as a **user** variable and redeploy so everything uses **8000**.
+
+3. **Confirm the process is up**  
+   **Deployments** → latest → scroll logs to **“Application startup complete”** / **Uvicorn running on** `0.0.0.0:…`. The port in that line must match your public networking port.
+
+4. **Wait 2–5 minutes** after generating a domain, then retry **`https://YOUR-API-HOST/health`**.
 
 ---
 
