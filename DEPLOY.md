@@ -45,8 +45,10 @@ You do **not** need to edit this URL for this app: the backend automatically swi
 
 1. In the **same Railway project**, click **+ New** → **GitHub Repo** → choose the repo you pushed in step 0.
 2. After the service is created, click it → **Settings**:
-   - **Root Directory**: set to **`backend`** (required). The API `Dockerfile` and `railway.json` live there; Railway must not build from the monorepo root or Railpack will see `frontend/` + `docs/` and fail.
-   - **Settings → Build → Builder**: choose **Dockerfile** (not **Railpack**). `backend/railway.json` also sets `"builder": "DOCKERFILE"`, but the dashboard choice is the most reliable.
+   - **Root Directory** — pick **one** of these (both work; do not leave a stale mix):
+     - **Empty / `.` (repo root)** — uses the top-level **`Dockerfile`** and **`railway.json`** in this repo. That image copies `backend/` into the container. Easiest if you tend to forget changing Root Directory.
+     - **`backend`** — uses **`backend/Dockerfile`** and **`backend/railway.json`**. Smaller Docker build context.
+   - **Settings → Build → Builder**: choose **Dockerfile** (not **Railpack**). The `railway.json` files set `"builder": "DOCKERFILE"`, but the dashboard choice is the most reliable.
 3. **Variables** tab on **this API service** (not Postgres). Click **+ New Variable** and add each row:
 
 | Name | What to put |
@@ -73,7 +75,10 @@ Optional keys (only if you use them):
 
 6. **Sanity check**: open `https://YOUR-API-HOST/health` in a browser. You should see JSON like `{"status":"ok"}`.
 
-If deploy fails, open **Deployments** → latest → **Logs**. Common issues: wrong **Root Directory** (`backend`), or **`DATABASE_URL`** missing.
+If deploy fails, open **Deployments** → latest → **Logs** and read whether the red step is **Build** or **Deploy**.
+
+- **Build** failed: Railway did not use a Dockerfile for your **Root Directory**. Typical causes: Root Directory is wrong for the layout you chose (e.g. set to `backend` but only a root `Dockerfile` exists, or the opposite), or **Builder** is **Railpack** instead of **Dockerfile**. Railpack on the full monorepo often errors with “could not determine how to build” because it sees `frontend/` + `backend/` together.
+- **Deploy** failed (image built, then crash): often **`DATABASE_URL`** missing or wrong on the API service, **`create_tables.py`** cannot reach Postgres, or **port** / healthcheck mismatch (see below).
 
 ### Railway — “The train has not arrived at the station” / Not Found
 
@@ -90,7 +95,7 @@ That page means the **edge URL is not reaching your running container** (wrong p
 3. **Confirm the process is up**  
    **Deployments** → latest → scroll logs to **“Application startup complete”** / **Uvicorn running on** `0.0.0.0:…`. The port in that line must match your public networking port.
 
-4. **If build fails with Railpack** (“could not determine how to build”): your **Root Directory** is not **`backend`**, or **Builder** is not **Dockerfile**. Fix those two, then redeploy.
+4. **If build fails with Railpack** (“could not determine how to build”): set **Builder** to **Dockerfile**, and set **Root Directory** consistently — either **empty** (uses repo-root `Dockerfile`) or **`backend`** (uses `backend/Dockerfile`). Then redeploy.
 
 5. **Wait 2–5 minutes** after generating a domain, then retry **`https://YOUR-API-HOST/health`**.
 
