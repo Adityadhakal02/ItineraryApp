@@ -45,8 +45,8 @@ You do **not** need to edit this URL for this app: the backend automatically swi
 
 1. In the **same Railway project**, click **+ New** → **GitHub Repo** → choose the repo you pushed in step 0.
 2. After the service is created, click it → **Settings**:
-   - **Root Directory**: set to `backend` (exactly this folder name in your repo).
-   - **Builder**: must use **Dockerfile** (this repo ships `backend/railway.json` with `"builder": "DOCKERFILE"` so Railway does not default to **Railpack**, which can ignore your Docker image and never run Uvicorn the way we expect).
+   - **Root Directory**: leave **empty** (repo root). This repo has a **root** `Dockerfile` + `railway.json` that build the API from `backend/` without Railpack guessing wrong. *(Alternative: set Root Directory to `backend` and rely on `backend/Dockerfile` + `backend/railway.json` — do not mix: either empty root **or** `backend`, not half-and-half.)*
+   - **Builder**: should become **Dockerfile** via `railway.json` (not **Railpack**). If you still see Railpack analyzing `backend/` + `frontend/` at the top level, your Root Directory is wrong or empty root files are missing from GitHub.
 3. **Variables** tab on **this API service** (not Postgres). Click **+ New Variable** and add each row:
 
 | Name | What to put |
