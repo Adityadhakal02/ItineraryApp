@@ -4,21 +4,21 @@
 
 ## Project description
 
-A full-stack web app where a signed-in user enters a **natural-language trip request** (for example, “Paris art weekend under $800”). The backend **parses** the request (**Google Gemini** when configured, otherwise a heuristic fallback), **geocodes** the destination (**Nominatim** if Mapbox is not configured), then **aggregates** events, dining, and stays from **Ticketmaster**, **Yelp**, and **Amadeus** when API keys are present. Without those keys (or on failure), the app can still use **OpenStreetMap / Overpass**-style data for real POIs where implemented. **Driving routes** use **Mapbox Directions** if `MAPBOX_ACCESS_TOKEN` is set; otherwise **OSRM** (public demo) or a simple straight-line geometry. The itinerary is stored in **PostgreSQL** as JSON and shown in the UI with a **day-by-day** view and an **interactive map** (Leaflet + OSM tiles) on the detail page.
+A full-stack web app where a signed-in user enters a **natural-language trip request** (for example, “Paris art weekend under $800”). The backend **parses** the request with **Google Gemini** (`google-generativeai`) when `GOOGLE_GEMINI_API_KEY` is set, otherwise a **heuristic** fallback. It **geocodes** the destination using **Mapbox** first when `MAPBOX_ACCESS_TOKEN` is set, then **Nominatim** — except in **`DEMO_MODE`**, where a small **demo place catalog** is used instead of live geocoders. It **aggregates** events, dining, and stays from **Ticketmaster**, **Yelp**, and **Amadeus** when API keys are present. Without those keys (or on failure), the app can still use **OpenStreetMap / Overpass**-style data for real POIs where implemented in the clients. **Driving routes** use **Mapbox Directions** if `MAPBOX_ACCESS_TOKEN` is set; otherwise **OSRM** (public demo) or a simple straight-line geometry (in `DEMO_MODE`, a mock route). The itinerary is stored in **PostgreSQL** as JSON and shown in the UI with a **day-by-day** view and an **interactive map** (Leaflet + OSM tiles) on the detail page.
 
 ## Repository structure
 
 | Path | Purpose |
 |------|---------|
 | `frontend/` | Next.js 15 (App Router), React, TypeScript, Tailwind — login, dashboard, itinerary detail + map |
-| `backend/` | FastAPI, JWT auth, SQLAlchemy async + PostgreSQL, API clients, Gemini + LangGraph orchestration |
+| `backend/` | FastAPI, JWT auth, SQLAlchemy async + PostgreSQL, httpx API clients, asyncio orchestration, Gemini NL parse when configured |
 | `docs/` | Architecture notes, development notes, acknowledgments |
 | `DEPLOY.md` | Step-by-step deploy (Railway + Vercel) |
 
 ## Technologies used
 
 - **Frontend:** Next.js 15, React 18, TypeScript, Tailwind CSS, **Leaflet** + **react-leaflet** (OpenStreetMap tiles — **no** Mapbox GL / react-map-gl in the UI)
-- **Backend:** Python 3.10+ (Dockerfile uses 3.12), FastAPI, Uvicorn, Pydantic / pydantic-settings, SQLAlchemy async, asyncpg, JWT (**python-jose**), **httpx**, **LangGraph** + **langchain-google-genai** (Gemini)
+- **Backend:** Python 3.10+ (Dockerfile uses 3.12), FastAPI, Uvicorn, Pydantic / pydantic-settings, SQLAlchemy async, asyncpg, JWT (**python-jose**), **httpx**, **google-generativeai** (Gemini JSON parse). `requirements.txt` also lists **langgraph** and **langchain-google-genai**; the current itinerary pipeline does not import them.
 - **Database:** PostgreSQL
 - **AI / external APIs (all optional in practice):** Google Gemini; **Ticketmaster**, **Yelp**, **Amadeus**, **Mapbox** (Directions + geocoding on the **server** when tokens are set). Free fallbacks include **Nominatim**, **OSRM**, and OSM-derived POIs where wired in code.
 
@@ -69,7 +69,7 @@ npm run dev
 
 ### Environment variables
 
-- **Backend** (`backend/.env`): `DATABASE_URL`, `JWT_SECRET`; other provider keys as needed. Stub responses or OSM fallbacks may apply when a client has no key or a call fails. `DEMO_MODE=true` skips much of the live provider HTTP while still using Gemini when `GOOGLE_GEMINI_API_KEY` is set. **`MAPBOX_ACCESS_TOKEN` is optional** — without it, geocoding can use **Nominatim** and routes **OSRM** (or a simple line) on the server.
+- **Backend** (`backend/.env`): `DATABASE_URL`, `JWT_SECRET`; other provider keys as needed. Stub responses or OSM fallbacks may apply when a client has no key or a call fails. **`DEMO_MODE=true`** short-circuits most live provider HTTP (fixtures / demo catalog geocode and mock routes); **Gemini parsing still runs** if `GOOGLE_GEMINI_API_KEY` is set, because `DEMO_MODE` does not disable `parse_trip`. **`MAPBOX_ACCESS_TOKEN` is optional** — when not in demo mode, without Mapbox, geocoding can use **Nominatim** and routes **OSRM** (or a simple line) on the server.
 - **Frontend** (`frontend/.env.local`): for production, set **`NEXT_PUBLIC_API_URL`** to your deployed API (see `DEPLOY.md`). For local dev, empty `NEXT_PUBLIC_API_URL` uses same-origin `/api` rewrites to FastAPI.
 
 ## How to run (quick)
