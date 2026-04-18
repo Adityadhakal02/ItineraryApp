@@ -20,7 +20,7 @@ A full-stack web app where a signed-in user enters a **natural-language trip req
 - **Frontend:** Next.js 15, React 18, TypeScript, Tailwind CSS, **Leaflet** + **react-leaflet** (OpenStreetMap tiles — **no** Mapbox GL / react-map-gl in the UI)
 - **Backend:** Python 3.10+ (Dockerfile uses 3.12), FastAPI, Uvicorn, Pydantic / pydantic-settings, SQLAlchemy async, asyncpg, JWT (**python-jose**), **httpx**, **google-generativeai** (Gemini JSON parse). `requirements.txt` also lists **langgraph** and **langchain-google-genai**; the current itinerary pipeline does not import them.
 - **Database:** PostgreSQL
-- **AI / external APIs (all optional in practice):** Google Gemini; **Ticketmaster**, **Yelp**, **Amadeus**, **Mapbox** (Directions + geocoding on the **server** when tokens are set). Free fallbacks include **Nominatim**, **OSRM**, and OSM-derived POIs where wired in code.
+- **AI / external APIs:** Each integration is **optional**. Without keys (or when a call fails), the app uses **heuristics**, **demo data**, or free paths: **Nominatim** (geocode), **OSRM** (routes), and **OSM-derived POIs** where wired in code. When set: **Google Gemini** (NL parse), **Ticketmaster**, **Yelp**, **Amadeus**, and **Mapbox** (Directions + geocoding on the **server**).
 
 ## Setup
 
