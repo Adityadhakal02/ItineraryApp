@@ -2,7 +2,8 @@
 function getApiBase(): string {
   const u = process.env.NEXT_PUBLIC_API_URL;
   if (u != null && u.trim() !== "") {
-    return u.replace(/\/$/, "");
+    // Origin only: paths already include `/api/...`. Trailing `/api` would double the prefix.
+    return u.trim().replace(/\/+$/, "").replace(/\/api$/i, "");
   }
   return "";
 }
