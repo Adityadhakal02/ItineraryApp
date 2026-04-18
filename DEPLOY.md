@@ -45,10 +45,10 @@ You do **not** need to edit this URL for this app: the backend automatically swi
 
 1. In the **same Railway project**, click **+ New** → **GitHub Repo** → choose the repo you pushed in step 0.
 2. After the service is created, click it → **Settings**:
-   - **Root Directory** — pick **one** of these (both work; do not leave a stale mix):
-     - **Empty / `.` (repo root)** — uses the top-level **`Dockerfile`** and **`railway.json`** in this repo. That image copies `backend/` into the container. Easiest if you tend to forget changing Root Directory.
-     - **`backend`** — uses **`backend/Dockerfile`** and **`backend/railway.json`**. Smaller Docker build context.
-   - **Settings → Build → Builder**: choose **Dockerfile** (not **Railpack**). The `railway.json` files set `"builder": "DOCKERFILE"`, but the dashboard choice is the most reliable.
+   - **Root Directory** — pick **one** of these (stick to it; mixing with the wrong config breaks builds):
+     - **`backend`** (recommended) — smaller context. Uses **`backend/Dockerfile`**. Because [Railway config-as-code does not follow Root Directory](https://docs.railway.com/deployments/monorepo), open **Settings →** look for **Config as code** / **Railway config file** (wording varies) and set the path to **`/backend/railway.json`** so healthchecks and the Dockerfile builder apply to this service. If you do not see that field, set **Build → Builder** to **Dockerfile** manually.
+     - **Empty / `.` (repo root)** — uses the top-level **`Dockerfile`** only (no repo-root `railway.json`, so Railway does not mix up paths with a `backend` service). That image copies `backend/` into the container.
+   - **Settings → Build → Builder**: choose **Dockerfile** (not **Railpack**). `backend/railway.json` sets `"builder": "DOCKERFILE"`, but the dashboard is the source of truth if anything disagrees.
 3. **Variables** tab on **this API service** (not Postgres). Click **+ New Variable** and add each row:
 
 | Name | What to put |
@@ -77,7 +77,7 @@ Optional keys (only if you use them):
 
 If deploy fails, open **Deployments** → latest → **Logs** and read whether the red step is **Build** or **Deploy**.
 
-- **Build** failed: Railway did not use a Dockerfile for your **Root Directory**. Typical causes: Root Directory is wrong for the layout you chose (e.g. set to `backend` but only a root `Dockerfile` exists, or the opposite), or **Builder** is **Railpack** instead of **Dockerfile**. Railpack on the full monorepo often errors with “could not determine how to build” because it sees `frontend/` + `backend/` together.
+- **Build** failed: Railway did not use a Dockerfile for your **Root Directory**, or it mixed **repo-root** config with a **`backend`** build context. Typical causes: **Builder** is **Railpack** instead of **Dockerfile**; Root Directory is **`backend`** but Railway still applied a **root** `railway.json` / Dockerfile that runs `COPY backend/…` (those paths do not exist inside the `backend-only` context — use **`/backend/railway.json`** for config-as-code, or clear Root Directory and use only the repo-root `Dockerfile`); or Root Directory is empty but you expected `backend/Dockerfile`. Railpack on the full repo often errors with “could not determine how to build” because it sees `frontend/` + `backend/` together.
 - **Deploy** failed (image built, then crash): often **`DATABASE_URL`** missing or wrong on the API service, **`create_tables.py`** cannot reach Postgres, or **port** / healthcheck mismatch (see below).
 
 ### Railway — “The train has not arrived at the station” / Not Found

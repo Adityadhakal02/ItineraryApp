@@ -5,8 +5,12 @@ FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_DEFAULT_TIMEOUT=180
+
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --default-timeout=120 -r requirements.txt
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir -r requirements.txt
 
 COPY backend/app ./app
 COPY backend/create_tables.py .
