@@ -1,4 +1,3 @@
-"""User model for authentication and trip ownership."""
 from sqlalchemy import String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime

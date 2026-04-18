@@ -1,7 +1,6 @@
-"""Create database tables from models. Run once before first start: python create_tables.py (from backend dir)."""
 import asyncio
 from app.database import engine, Base
-from app.models import User, Itinerary  # noqa: F401 - register models with Base
+from app.models import User, Itinerary  # noqa: F401
 
 
 async def main():

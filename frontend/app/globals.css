@@ -15,7 +15,3 @@ body {
   color: var(--foreground);
   background: var(--background);
 }
-
-.mapboxgl-map {
-  border-radius: 0.75rem;
-}

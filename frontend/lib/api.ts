@@ -1,8 +1,4 @@
-/**
- * API base URL.
- * - Default (unset NEXT_PUBLIC_API_URL): same-origin `/api` so Next.js can proxy to FastAPI in dev (see next.config.ts).
- * - Production: set NEXT_PUBLIC_API_URL to your backend origin, e.g. https://api.example.com
- */
+/* DEV: empty NEXT_PUBLIC_API_URL → same-origin /api (Next rewrites to FastAPI in dev). */
 function getApiBase(): string {
   const u = process.env.NEXT_PUBLIC_API_URL;
   if (u != null && u.trim() !== "") {
@@ -18,8 +14,7 @@ function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
-const NETWORK_HINT =
-  "Cannot reach the API. Start the backend: cd backend && source .venv/bin/activate && uvicorn app.main:app --reload (must listen on port 8000).";
+const NETWORK_HINT = "Network error — is the API up on port 8000?";
 
 function parseFastApiDetail(detail: unknown): string {
   if (typeof detail === "string") return detail;
@@ -40,9 +35,7 @@ async function readApiErrorBody(res: Response): Promise<string> {
     const d = parseFastApiDetail(j.detail);
     if (d) return d;
     if (j.message) return String(j.message);
-  } catch {
-    /* not JSON */
-  }
+  } catch {}
   return text.trim().slice(0, 240) || res.statusText;
 }
 
@@ -67,7 +60,6 @@ async function throwIfNotOk(res: Response, context: string): Promise<void> {
   throw new Error(`${context} (${res.status}): ${body}`);
 }
 
-// auth
 export async function register(email: string, password: string, fullName?: string) {
   const res = await fetchWithAuth("/api/auth/register", {
     method: "POST",
@@ -92,7 +84,6 @@ export async function getMe() {
   return res.json();
 }
 
-// itineraries
 export type ItineraryListItem = {
   id: number;
   title: string | null;

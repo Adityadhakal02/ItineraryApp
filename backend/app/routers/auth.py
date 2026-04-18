@@ -1,4 +1,3 @@
-# register, login, /me. bcrypt for passwords, JWT for session (logout = client drops token)
 from typing import Optional
 
 import bcrypt

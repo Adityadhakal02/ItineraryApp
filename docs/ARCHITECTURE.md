@@ -27,11 +27,11 @@ Travel Itinerary AI Orchestrator is a three-tier web application: **Next.js** fr
 
 ## Request flow (create itinerary)
 
-1. User submits a **natural-language query** on the dashboard.
-2. **`parse_trip_query`** — Gemini extracts destination, dates, budget, interests, etc.; if no API key, **heuristic fallback**.
-3. **`geocode_destination`** — Mapbox Geocoding if `MAPBOX_ACCESS_TOKEN` is set; else **Nominatim**; else default coordinates.
-4. **`build_itinerary_from_query` (orchestrator)** — Runs **Ticketmaster**, **Yelp**, **Amadeus** in parallel; builds **days**, **markers**, and a **Mapbox Directions** route between sample stops; computes **estimated_cost**.
-5. Row saved in **`itineraries`**; frontend loads detail and renders **`payload.map`** in **`TripMap`**.
+1. Dashboard POST with the raw trip text.
+2. **`parse_trip_query`** — structured fields (Gemini JSON or local heuristics).
+3. **`geocode_destination`** — coordinates via Mapbox, Nominatim, or a default.
+4. **`build_itinerary_from_query`** — parallel Ticketmaster / Yelp / Amadeus; **days**, **markers**, Mapbox **Directions** segment; **estimated_cost**.
+5. Persist row; detail view reads **`payload.map`** through **`TripMap`**.
 
 ## Backend structure
 

@@ -1,12 +1,11 @@
-"""Pydantic schemas for itineraries."""
-from typing import Any, Optional
+from typing import Optional
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ItineraryCreate(BaseModel):
-    query: str  # Natural language, e.g. "Paris art weekend €800"
+    query: str = Field(min_length=1, max_length=4000)
 
 
 class ItineraryUpdate(BaseModel):

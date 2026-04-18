@@ -1,4 +1,3 @@
-# get current user from JWT - used by any route that needs auth
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -9,7 +8,7 @@ from app.database import get_db
 from app.models import User
 from app.auth.jwt import decode_access_token
 
-security = HTTPBearer(auto_error=False)  # auto_error=False so we can return 401 ourselves
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(

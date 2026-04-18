@@ -1,45 +1,28 @@
-"""Natural-language trip parsing via Gemini, with offline fallback."""
 import json
 import re
 from datetime import date, timedelta
 from typing import Any, Dict, Optional
 
 from app.config import get_settings
+from app.demo_places import match_place
 from app.schemas.trip_plan import TripPlanParsed
+from app.services.heuristic_trip import heuristic_trip_plan
 
 
 def _today_str() -> str:
     return date.today().isoformat()
 
 
-def _fallback_parse(raw_query: str) -> TripPlanParsed:
-    """Heuristic extraction when Gemini is unavailable."""
-    query = (raw_query or "").strip()
-    parts = query.replace(",", " ").split()
-    destination = "Trip"
-    if parts:
-        destination = " ".join(parts[: min(3, len(parts))]).title()
+def _default_dates() -> tuple[str, str]:
     start = date.today() + timedelta(days=7)
     end = start + timedelta(days=2)
-    budget: Optional[float] = None
-    for word in parts:
-        digits = "".join(c for c in word if c.isdigit())
-        if digits:
-            budget = float(digits)
-            break
-    return TripPlanParsed(
-        destination=destination,
-        iata_city_code=None,
-        start_date=start.isoformat(),
-        end_date=end.isoformat(),
-        budget_usd=budget,
-        interests="restaurants",
-        event_keyword=None,
-        title=f"{destination} trip",
-    )
+    return start.isoformat(), end.isoformat()
 
 
 def _guess_iata(destination: str) -> Optional[str]:
+    m = match_place(destination.lower().strip())
+    if m:
+        return m[3]
     d = destination.lower().strip()
     mapping = {
         "paris": "PAR",
@@ -79,11 +62,9 @@ def _coerce_plan(data: Dict[str, Any]) -> TripPlanParsed:
     start = str(data.get("start_date") or "").strip()
     end = str(data.get("end_date") or "").strip()
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", start):
-        fb = _fallback_parse(dest)
-        start = fb.start_date
+        start, _ = _default_dates()
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", end):
-        fb = _fallback_parse(dest)
-        end = fb.end_date
+        _, end = _default_dates()
     iata = data.get("iata_city_code")
     if isinstance(iata, str) and len(iata.strip()) == 3:
         iata_clean = iata.strip().upper()
@@ -114,7 +95,7 @@ async def parse_trip_query(raw_query: str) -> TripPlanParsed:
     settings = get_settings()
     key = (settings.google_gemini_api_key or "").strip()
     if not key:
-        plan = _fallback_parse(raw_query)
+        plan = heuristic_trip_plan(raw_query)
         if not plan.iata_city_code:
             plan = plan.model_copy(update={"iata_city_code": _guess_iata(plan.destination)})
         return plan
@@ -156,7 +137,7 @@ User message:
             plan = plan.model_copy(update={"iata_city_code": _guess_iata(plan.destination)})
         return plan
     except Exception:
-        plan = _fallback_parse(raw_query)
+        plan = heuristic_trip_plan(raw_query)
         if not plan.iata_city_code:
             plan = plan.model_copy(update={"iata_city_code": _guess_iata(plan.destination)})
         return plan

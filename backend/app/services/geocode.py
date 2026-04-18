@@ -1,14 +1,19 @@
-"""Resolve a place name to lat/lon (Mapbox if configured, else Nominatim)."""
 from typing import Optional, Tuple
 import httpx
 
 from app.config import get_settings
+from app.demo_places import match_place
 
 
 async def geocode_destination(query: str) -> Tuple[float, float]:
-    """Return (lat, lon). Never raises; falls back to a default if all lookups fail."""
     q = (query or "").strip()
     if not q:
+        return 40.7128, -74.0060
+    settings = get_settings()
+    if settings.demo_mode:
+        m = match_place(q.lower())
+        if m:
+            return m[1], m[2]
         return 40.7128, -74.0060
     coords = await _mapbox_geocode(q)
     if coords:

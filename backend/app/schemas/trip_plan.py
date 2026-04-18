@@ -1,15 +1,14 @@
-"""Structured trip parameters from NL parsing (Gemini or fallback)."""
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class TripPlanParsed(BaseModel):
-    destination: str = Field(..., description="Primary city or place name")
-    iata_city_code: Optional[str] = Field(None, description="3-letter IATA city code if known")
-    start_date: str = Field(..., description="YYYY-MM-DD")
-    end_date: str = Field(..., description="YYYY-MM-DD")
+    destination: str
+    iata_city_code: Optional[str] = None
+    start_date: str
+    end_date: str
     budget_usd: Optional[float] = None
-    interests: Optional[str] = Field(None, description="Yelp search terms, e.g. italian dinner")
-    event_keyword: Optional[str] = Field(None, description="Ticketmaster keyword")
+    interests: Optional[str] = None
+    event_keyword: Optional[str] = None
     title: Optional[str] = None

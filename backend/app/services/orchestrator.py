@@ -1,4 +1,3 @@
-"""Merge NL parsing, geocoding, and external APIs into a single itinerary payload."""
 from __future__ import annotations
 
 import asyncio
@@ -6,6 +5,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Tuple
 
 from app.clients import amadeus, mapbox, ticketmaster, yelp
+from app.config import get_settings
+from app.services import demo_content
 from app.services.geocode import geocode_destination
 from app.services.parse_trip import parse_trip_query
 
@@ -40,6 +41,7 @@ def _apply_geo_center(items: List[dict], lat: float, lon: float) -> List[dict]:
 
 
 async def build_itinerary_from_query(raw_query: str) -> Dict[str, Any]:
+    settings = get_settings()
     plan = await parse_trip_query(raw_query)
     lat, lon = await geocode_destination(plan.destination)
 
@@ -54,8 +56,10 @@ async def build_itinerary_from_query(raw_query: str) -> Dict[str, Any]:
             start_date,
             end_date,
             keyword=plan.event_keyword,
+            near_lat=lat,
+            near_lon=lon,
         ),
-        yelp.search_restaurants(lat, lon, term=yelp_term, limit=8),
+        yelp.search_restaurants(lat, lon, term=yelp_term, limit=8, place_name=plan.destination),
         amadeus.get_hotels(iata, near_lat=lat, near_lon=lon),
     )
 
@@ -64,18 +68,9 @@ async def build_itinerary_from_query(raw_query: str) -> Dict[str, Any]:
     hotels = _apply_geo_center(list(hotels), lat - 0.008, lon - 0.008)
 
     if not events:
-        events = [
-            {
-                "name": "Explore " + plan.destination,
-                "venue": plan.destination,
-                "date": start_date,
-                "time": "10:00",
-                "lat": lat,
-                "lon": lon,
-                "price_min": 0,
-                "price_max": 0,
-            }
-        ]
+        events = demo_content.demo_events(
+            plan.destination, start_date, end_date, plan.event_keyword, lat, lon
+        )
 
     dates = _date_range_inclusive(start_date, end_date)
     if not dates:
@@ -96,7 +91,7 @@ async def build_itinerary_from_query(raw_query: str) -> Dict[str, Any]:
                 "date": d_str,
                 "events": ev_slice,
                 "dining": rest_slice,
-                "notes": "",
+                "notes": demo_content.day_note(i, plan.destination) if settings.demo_mode else "",
             }
         )
 

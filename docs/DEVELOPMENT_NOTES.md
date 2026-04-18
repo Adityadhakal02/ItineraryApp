@@ -1,28 +1,25 @@
-# Development Notes
+# Development notes
 
-Notes for progress reports and future work.
+## Stack
 
-## Infrastructure and auth (early phase)
+FastAPI + async SQLAlchemy/PostgreSQL, Next.js 15, JWT auth. Schema via `create_tables.py`; Alembic is in requirements if migrations are needed later.
 
-- FastAPI backend (async), Next.js 15 frontend, PostgreSQL via async SQLAlchemy.
-- `create_tables.py` for schema; Alembic listed in requirements if we migrate later.
-- JWT auth in `/api/auth`; itineraries require a logged-in user.
+## Behavior
 
-## Post–midterm implementation (current)
+- **`DEMO_MODE`** — No Ticketmaster/Yelp/Amadeus/Mapbox/Geocode HTTP; catalog lat/lon + rich fixtures. NL still uses Gemini if configured, else `heuristic_trip.py`.
+- **`parse_trip.py`** — Gemini JSON extraction for trip fields; regex/heuristic path when the key is missing or the call fails.
+- **`geocode.py`** — Mapbox geocoding first, then Nominatim, then a default coordinate pair.
+- **`orchestrator.py`** — Parallel Ticketmaster / Yelp / Amadeus calls; builds `days`, `map.markers`, Mapbox Directions segment; writes the full blob into `payload`.
+- **`itineraries` router** — POST runs the orchestrator end-to-end.
+- **`TripMap`** — Reads `payload.map`; needs `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` for GL. Without it, the UI shows a short message instead of the canvas.
 
-- **`parse_trip.py`** — Gemini (`gemini-1.5-flash`) returns JSON fields for destination, IATA, dates, budget, interests; **fallback** when `GOOGLE_GEMINI_API_KEY` is unset or on error.
-- **`geocode.py`** — Mapbox Geocoding preferred; **Nominatim** fallback; default coords if both fail.
-- **`orchestrator.py`** — `asyncio.gather` for Ticketmaster, Yelp, Amadeus; builds **days**, **markers**, **Mapbox Directions** route; stores everything in `payload`.
-- **`itineraries.py`** — Create route calls orchestrator only (no inline stub).
-- **Frontend `TripMap`** — `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` for interactive map; otherwise a notice (data still in payload).
+## Backlog
 
-## Optional / next steps
+- httpx/Gemini mocks for automated tests.
+- Rate limits or caching (config still has an unused `redis_url`).
+- Smarter scheduling than round-robin across days.
+- Hosted DB + deploy, Mapbox URL restrictions in production.
 
-- Automated tests (mock httpx / Gemini).
-- Rate limiting or caching (Redis URL in config is unused).
-- Richer day scheduling (true calendar logic vs. round-robin).
-- Deployment (Docker, hosting DB, restricted Mapbox URLs).
+## Python
 
-## Compatibility
-
-- Prefer `Optional[...]` in older Python if needed; project targets 3.10+.
+Targets 3.10+.

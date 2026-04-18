@@ -1,9 +1,9 @@
-"""Amadeus API client for hotels (auth + hotel list)."""
 import logging
 from typing import Optional
 
 import httpx
 from app.config import get_settings
+from app.services import demo_content
 
 logger = logging.getLogger(__name__)
 AUTH_URL = "https://test.api.amadeus.com/v1/security/oauth2/token"
@@ -15,39 +15,52 @@ async def get_hotels(
     near_lat: Optional[float] = None,
     near_lon: Optional[float] = None,
 ) -> list[dict]:
-    """Fetch hotel list by city (IATA code). Test API. Mocks if no keys or on error."""
     settings = get_settings()
-    if not settings.amadeus_client_id or not settings.amadeus_client_secret:
+    if settings.demo_mode:
         return _mock_hotels(city_code, near_lat=near_lat, near_lon=near_lon)
-    try:
-        async with httpx.AsyncClient() as client:
-            auth_r = await client.post(
-                AUTH_URL,
-                data={
-                    "grant_type": "client_credentials",
-                    "client_id": settings.amadeus_client_id,
-                    "client_secret": settings.amadeus_client_secret,
-                },
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-                timeout=30.0,
-            )
-            auth_r.raise_for_status()
-            token = auth_r.json().get("access_token")
-            r = await client.get(
-                HOTELS_URL,
-                params={"cityCode": city_code},
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=30.0,
-            )
-            r.raise_for_status()
-            data = r.json()
-    except Exception as e:
-        logger.warning("Amadeus API failed (%s); using mock hotels.", e)
-        return _mock_hotels(city_code, near_lat=near_lat, near_lon=near_lon)
-    return [
-        {"id": h.get("hotelId"), "name": h.get("name"), "lat": h.get("latitude"), "lon": h.get("longitude")}
-        for h in data.get("data", [])[:10]
-    ]
+
+    cid = (settings.amadeus_client_id or "").strip()
+    sec = (settings.amadeus_client_secret or "").strip()
+    if cid and sec:
+        try:
+            async with httpx.AsyncClient() as client:
+                auth_r = await client.post(
+                    AUTH_URL,
+                    data={
+                        "grant_type": "client_credentials",
+                        "client_id": cid,
+                        "client_secret": sec,
+                    },
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                    timeout=30.0,
+                )
+                auth_r.raise_for_status()
+                token = auth_r.json().get("access_token")
+                r = await client.get(
+                    HOTELS_URL,
+                    params={"cityCode": city_code},
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=30.0,
+                )
+                r.raise_for_status()
+                data = r.json()
+            amadeus_rows = [
+                {"id": h.get("hotelId"), "name": h.get("name"), "lat": h.get("latitude"), "lon": h.get("longitude"), "source": "amadeus"}
+                for h in data.get("data", [])[:10]
+            ]
+            if amadeus_rows:
+                return amadeus_rows
+        except Exception as e:
+            logger.warning("Amadeus API failed (%s); trying OpenStreetMap hotels.", e)
+
+    if near_lat is not None and near_lon is not None:
+        from app.clients import osm_hotels
+
+        live = await osm_hotels.search_hotels_nearby(near_lat, near_lon, limit=10)
+        if live:
+            return live
+
+    return _mock_hotels(city_code, near_lat=near_lat, near_lon=near_lon)
 
 
 def _mock_hotels(
@@ -57,7 +70,4 @@ def _mock_hotels(
 ) -> list[dict]:
     lat = near_lat if near_lat is not None else 48.8566
     lon = near_lon if near_lon is not None else 2.3522
-    return [
-        {"id": "1", "name": "Grand Hotel Central", "lat": lat + 0.01, "lon": lon + 0.01},
-        {"id": "2", "name": "Boutique Stay", "lat": lat - 0.01, "lon": lon - 0.01},
-    ]
+    return demo_content.demo_hotels(city_code, lat, lon)

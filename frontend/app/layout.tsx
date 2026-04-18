@@ -10,8 +10,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Travel Itinerary AI Orchestrator",
-  description: "AI-generated travel itineraries from natural language",
+  title: "Itinerary",
+  description: "Natural-language trip planning with maps and structured days.",
 };
 
 export default function RootLayout({
@@ -21,7 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${dmSans.variable} font-sans antialiased min-h-screen bg-white text-neutral-900`}>
+      <body
+        className={`${dmSans.variable} font-sans antialiased min-h-screen bg-gradient-to-b from-amber-50/90 via-white to-[#fffbeb] text-neutral-900`}
+      >
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

@@ -1,18 +1,25 @@
-# Ticketmaster events - mocks when no API key or request fails
 import logging
 from typing import Optional
 
 import httpx
 from app.config import get_settings
+from app.services import demo_content
 
 logger = logging.getLogger(__name__)
 BASE = "https://app.ticketmaster.com/discovery/v2"
 
 
-async def search_events(city: str, start_date: Optional[str], end_date: Optional[str], keyword: Optional[str] = None) -> list[dict]:
+async def search_events(
+    city: str,
+    start_date: Optional[str],
+    end_date: Optional[str],
+    keyword: Optional[str] = None,
+    near_lat: Optional[float] = None,
+    near_lon: Optional[float] = None,
+) -> list[dict]:
     settings = get_settings()
-    if not settings.ticketmaster_api_key:
-        return _mock_events(city, start_date, end_date)
+    if settings.demo_mode or not settings.ticketmaster_api_key:
+        return _mock_events(city, start_date, end_date, keyword=keyword, near_lat=near_lat, near_lon=near_lon)
     params = {"apikey": settings.ticketmaster_api_key, "city": city, "size": "10"}
     if keyword:
         params["keyword"] = keyword
@@ -27,7 +34,7 @@ async def search_events(city: str, start_date: Optional[str], end_date: Optional
             data = r.json()
     except Exception as e:
         logger.warning("Ticketmaster API failed (%s); using mock events.", e)
-        return _mock_events(city, start_date, end_date)
+        return _mock_events(city, start_date, end_date, keyword=keyword, near_lat=near_lat, near_lon=near_lon)
     events = data.get("_embedded", {}).get("events", [])
     return [
         {
@@ -56,8 +63,14 @@ def _lon(e: dict) -> Optional[float]:
     return float(v[0].get("location", {}).get("longitude")) if v and v[0].get("location") else None
 
 
-def _mock_events(city: str, start_date: Optional[str], end_date: Optional[str]) -> list[dict]:
-    return [
-        {"id": "1", "name": "Sample Concert", "url": "https://example.com", "date": start_date or "2026-03-01", "time": "20:00", "venue": "Main Hall", "lat": 48.8566, "lon": 2.3522, "price_min": 50, "price_max": 120},
-        {"id": "2", "name": "Art Exhibition", "url": "https://example.com", "date": end_date or start_date or "2026-03-02", "time": "10:00", "venue": "City Museum", "lat": 48.8606, "lon": 2.3376, "price_min": 15, "price_max": 25},
-    ]
+def _mock_events(
+    city: str,
+    start_date: Optional[str],
+    end_date: Optional[str],
+    keyword: Optional[str] = None,
+    near_lat: Optional[float] = None,
+    near_lon: Optional[float] = None,
+) -> list[dict]:
+    lat0 = near_lat if near_lat is not None else 40.7128
+    lon0 = near_lon if near_lon is not None else -74.0060
+    return demo_content.demo_events(city, start_date, end_date, keyword, lat0, lon0)

@@ -27,20 +27,29 @@ A full-stack web app where a signed-in user enters a **natural-language trip req
 
 - Node.js 18+
 - Python 3.10+
-- PostgreSQL running locally (or connection string to a hosted instance)
+- PostgreSQL running locally (or a hosted connection string)
+
+### Seminar scope (weeks 7–10)
+
+| Block | What this repo covers |
+|-------|------------------------|
+| **7–8** | Next.js UI, JWT auth (`/login`, `/register`, `AuthContext`), dashboard + NL trip form |
+| **9** | Frontend calls FastAPI; create itinerary runs the orchestrator (parse → geocode → APIs → JSON in Postgres); detail view shows payload |
+| **10** | Mapbox Directions + geocoding on the backend; `TripMap` (react-map-gl) for markers + route; optional `DEMO_MODE` / mocks when keys are absent |
 
 ### Backend
 
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env: set DATABASE_URL, JWT_SECRET, and optional API keys
 python create_tables.py
 uvicorn app.main:app --reload
 ```
+
+Fill in `.env` (`DATABASE_URL`, `JWT_SECRET`, and any API keys you use).
 
 - API: [http://localhost:8000](http://localhost:8000) — interactive docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
@@ -49,32 +58,29 @@ uvicorn app.main:app --reload
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local  # optional; see below
+cp .env.example .env.local
 npm run dev
 ```
+
+`.env.local` is optional: leave `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` empty to use a **free OpenStreetMap** map (Leaflet). Set a Mapbox token only if you want Mapbox GL styles.
 
 - App: [http://localhost:3000](http://localhost:3000)
 
 ### Environment variables
 
-- **Backend** (`backend/.env`): `DATABASE_URL`, `JWT_SECRET`. Optional: `GOOGLE_GEMINI_API_KEY`, `TICKETMASTER_API_KEY`, `YELP_API_KEY`, `AMADEUS_CLIENT_ID` / `AMADEUS_CLIENT_SECRET`, `MAPBOX_ACCESS_TOKEN`. Missing keys use **mock or public** fallbacks where implemented so you can demo without every provider.
-- **Frontend map** (`frontend/.env.local`): `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` — same Mapbox token as backend for the map; if omitted, the detail page shows a notice and the itinerary still loads from the API.
+- **Backend** (`backend/.env`): `DATABASE_URL`, `JWT_SECRET`; other provider keys as needed. Stub responses kick in when a client has no key. `DEMO_MODE=true` skips provider HTTP (fixtures + catalog geocode) while still using Gemini when `GOOGLE_GEMINI_API_KEY` is set. **`MAPBOX_ACCESS_TOKEN` is optional** — without it, geocoding uses **Nominatim** and routes use a simple line geometry (still shown on the map).
+- **Frontend** (`frontend/.env.local`): optional `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` for Mapbox GL; if unset, the UI uses **OpenStreetMap** tiles (no Mapbox account or payment).
 
 ## How to run (quick)
 
-1. Start PostgreSQL and apply schema: `python create_tables.py` in `backend/`.
-2. Run backend: `uvicorn app.main:app --reload` from `backend/` with venv activated.
-3. Run frontend: `npm run dev` from `frontend/`.
-4. Register → login → create an itinerary from the dashboard → open the detail page to see days, lists, and map (with token).
+1. Postgres up; `python create_tables.py` in `backend/`.
+2. Backend: `uvicorn app.main:app --reload` (venv on).
+3. Frontend: `npm run dev` in `frontend/`.
+4. Register, log in, create a trip on the dashboard, open it for day view + map.
 
-## Progress report (assignment)
+## Report / submission
 
-This README satisfies the course requirement to document **description**, **setup**, **technologies**, and **how to run**. For the PDF report, also include:
-
-- **GitHub repository link** on the first page (push this project and use **meaningful commits** — not a single bulk upload).
-- **Design illustrations** (architecture, flow, DB schema, UI) — see `docs/ARCHITECTURE.md` as a starting point.
-- **Code snippets** with explanations in the report body (or reference key files: `orchestrator.py`, `parse_trip.py`, `TripMap.tsx`).
-- **Screenshots** of running app and **commit history** (GitHub screenshot).
+Course write-up usually wants the repo link, diagrams (see `docs/ARCHITECTURE.md`), a few explained snippets (`orchestrator.py`, `parse_trip.py`, `TripMap.tsx`), screenshots, and a commit-history capture.
 
 ## Acknowledgments
 
